@@ -59,7 +59,7 @@ analyzer = HarmonicRatio(dir, freq, rw)
 
 Analyze Dataset:
 ```python
-analyze_dataset(dataset, window_size, window_delta, filename=""):
+analyzer.analyze_dataset(dataset, window_size, window_delta, filename=""):
     # dataset -> single dimension time values of signal
     # window_size -> length of window for each individual harmonic analysis
     # window_delta -> increment of window after each analysis
