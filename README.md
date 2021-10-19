@@ -59,7 +59,7 @@ analyzer = HarmonicRatio(dir, freq, rw)
 
 Analyze Dataset:
 ```python
-analyze_dataset(self, dataset, window_size, window_delta, filename=""):
+analyze_dataset(dataset, window_size, window_delta, filename=""):
     # dataset -> single dimension time values of signal
     # window_size -> length of window for each individual harmonic analysis
     # window_delta -> increment of window after each analysis
@@ -72,10 +72,9 @@ Minimum Working Example:
 from HarmonicRatio import HarmonicRatio
 
 signal_frequency = 50 #Hz
-window_size = 80
-window_delta = 1
-filename = 'hr_graphs.html'
+window_size = 80 #Frames at a time to analyze (here, approx. 1 stride)
+window_delta = 1 #Frames to move up after each analysis
 
-analyzer = HarmonicRatio("x", signal_frequency, "w+")
-analyzer.analyze_dataset(input_array, window_size, window_delta, filename=filename)
+analyzer = HarmonicRatio("x", 50, "w+")
+analyzer.analyze_dataset(input_array, window_size, window_delta, filename='hr_graphs.html')
 ```
