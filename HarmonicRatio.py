@@ -91,7 +91,7 @@ class HarmonicRatio:
 
         #display functions for individual testing
         #self.plot_line(self.current_period, list(range(0, N)))
-        self.plot_line(np.abs(fft_output), fft_freqs)
+        #self.plot_line(np.abs(fft_output), fft_freqs)
         #print(fft_freqs)
 
         #sums first 10 even and odd harmonic amplitudes
