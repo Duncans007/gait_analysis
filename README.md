@@ -2,7 +2,12 @@
 
 gait_analysis is a set of python classes for signal processing, primarily used for human gait analysis.
 
-The package currenly only contains recursive analysis and harmonic ratio analysis.
+The package currenly contains classes for:
+- Recursive and recursion quantification analysis
+- Harmonic ratio analysis
+- Kalman filter for 6DoF IMU sensor fusion (roll and pitch output)
+- Kalman filter for acceleration-gait fusion (walking velocity output)
+
 
 ## Dependencies
 
@@ -12,6 +17,78 @@ The package currenly only contains recursive analysis and harmonic ratio analysi
 - scipy
 
 ## Usage
+
+
+### Class: kalman_filter_6dof()
+
+Kalman Filter for 6DoF IMU Sensor Fusion
+Fuses gyroscope and accelerometer measurements for pitch and roll angles
+Applicable to any IMU sensor
+
+Create Object:
+```python
+filter = kalman_filter_6dof()
+```
+
+Use as a live filter (manually update):
+```python
+roll, pitch = filter.update([gy_x, gy_y, gy_z], [ac_x, ac_y, ac_z], sample_time)
+```
+
+Analyze Dataset:
+```python
+dataset = [time_arr, gy_x_arr, gy_y_arr, gy_z_arr, ac_x_arr, ac_y_arr, ac_z_arr]
+roll_over_time, pitch_over_time = filter.analyze_dataset(dataset)
+```
+
+Minimum Working Example:
+
+```python
+from SensorFusion import kalman_filter_6dof
+
+filter = kalman_filter_6dof()
+
+dataset = [time_arr, gy_x_arr, gy_y_arr, gy_z_arr, ac_x_arr, ac_y_arr, ac_z_arr]
+
+roll_over_time, pitch_over_time = filter.analyze_dataset(dataset)
+```
+
+
+### Class: kalman_filter_velocity()
+
+Kalman Filter for Velocity
+Fuses positional and acceleration values to determine subject speed
+Acceleration comes from an IMU on the lower back
+Position comes from BoS (Base of Support) summation over time
+
+Create Object:
+```python
+filter = kalman_filter_velocity()
+```
+
+Use as a live filter (manually update):
+```python
+speed_current = filter.update([ac_x, ac_y, ac_z], pitch, position, sample_time)
+```
+
+Analyze Dataset:
+```python
+dataset = [time_arr, ac_x_arr, ac_y_arr, ac_z_arr, pitch_arr, position_arr]
+speed_over_time = filter.analyze_dataset(dataset)
+```
+
+Minimum Working Example:
+
+```python
+from SensorFusion import kalman_filter_velocity
+
+filter = kalman_filter_velocity()
+
+dataset = [time_arr, ac_x_arr, ac_y_arr, ac_z_arr, pitch_arr, position_arr]
+
+speed_over_time = filter.analyze_dataset(dataset)
+```
+
 
 ### Class: RecursionAnalysis()
 
