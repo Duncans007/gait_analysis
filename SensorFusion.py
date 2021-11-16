@@ -29,7 +29,7 @@ class kalman_filter_6dof():
     # Using for Live Filtering (manual update):
     #   roll, pitch = 6d_filter.update([gy_x, gy_y, gy_z], [ac_x, ac_y, ac_z], sample_time)
     # Using for Post-Processing:
-    #   roll_over_time, pitch_over_time = v_filter.analyze_dataset(dataset)
+    #   roll_over_time, pitch_over_time = 6d_filter.analyze_dataset(dataset)
     #   Where dataset contains 7 sub-arrays for [time, gy_x, gy_y, gy_z, ac_x, ac_y, ac_z]
 
     def __init__(self):
@@ -221,6 +221,8 @@ class kalman_filter_velocity():
 
         self.current_position = 0
 
+        self.ac_forward = []
+
 
     def update(self, accelerometer, pitch, position, dt):
         self.ac_x.append(accelerometer[0])
@@ -234,10 +236,9 @@ class kalman_filter_velocity():
         ac_z_mean = np.mean(self.ac_z)
 
         # Using pitch, approximate forward acceleration component
-        ac_forward = ac_x_mean * np.cos(np.radians(pitch))
+        ac_forward = np.sqrt((ac_x_mean**2) + (ac_y_mean**2)) * np.cos(np.radians(pitch))
         #ac_forward = ac_y_mean * np.sin(np.radians(pitch))
 
-        #self.speed = (1 - self.filter_c) * (self.speed + ac_forward_x * dt) + (self.filter_c * (position-self.current_position) / dt)
         speed_from_position = (position - self.current_position) / dt
         self.current_position = position
 
@@ -264,6 +265,9 @@ class kalman_filter_velocity():
 
         self.x = x_new
         self.P = (np.eye(2) - K.dot(self.C)).dot(self.P)
+
+
+        self.ac_forward.append(ac_forward)
 
         return self.x[1][0]
 
