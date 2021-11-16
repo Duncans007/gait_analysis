@@ -294,3 +294,10 @@ class kalman_filter_velocity():
         smoothed_arr = interpolate.UnivariateSpline(time_arr, arr_to_smooth, s=smooth_coeff)
         smoothed_arr = smoothed_arr(time_arr)
         return smoothed_arr
+
+
+    def zero(self, arr):
+        # Zeroes input function based on seconds 2-4 of data
+        calib_val = np.mean(arr[100:200])
+        output = [x - calib_val for x in arr]
+        return output
