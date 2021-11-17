@@ -36,13 +36,15 @@ class kalman_filter_6dof():
         self.reset()
 
         # Modifiable coefficient arrays
+        self.Q_coeff = 0.000001
         self.Q = np.array([[1, 0, 0, 0],
                            [0, 1, 0, 0],
                            [0, 0, 1, 0],
-                           [0, 0, 0, 1]]) * .000001
+                           [0, 0, 0, 1]]) * self.Q_coeff
 
+        self.R_coeff = 0.001
         self.R = np.array([[1, 0],
-                           [0, 10]]) * 0.001
+                           [0, 10]]) * self.R_coeff
 
         # Variable Initializations
         self.C = np.array([[1, 0, 0, 0],
