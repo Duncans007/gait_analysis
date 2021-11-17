@@ -88,8 +88,8 @@ class kalman_filter_6dof():
         roll_arr = self.zero(roll_arr)
         pitch_arr = self.zero(pitch_arr)
 
-        roll_arr = self.smooth(roll_arr, time_arr, smooth_coeff=1)
-        pitch_arr = self.smooth(pitch_arr, time_arr, smooth_coeff=1)
+        #roll_arr = self.smooth(roll_arr, time_arr, smooth_coeff=1)
+        #pitch_arr = self.smooth(pitch_arr, time_arr, smooth_coeff=1)
 
         return roll_arr, pitch_arr
 
