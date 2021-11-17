@@ -198,9 +198,9 @@ class kalman_filter_velocity():
         self.Q = np.array([[1, 0],
                            [0, 1]]) * self.Q_coeff
 
-        self.R_coeff = 0.001
+        self.R_coeff = .1
         self.R = np.array([[1, 0],
-                           [0, 10]]) * self.R_coeff
+                           [0, 1]]) * self.R_coeff
 
         # Variable Initializations
         self.C = np.array([[1, 0],
@@ -208,9 +208,9 @@ class kalman_filter_velocity():
 
 
     def reset(self):
-        self.ac_x = [0,0]
-        self.ac_y = [0,0]
-        self.ac_z = [0,0]
+        self.ac_x = [0]
+        self.ac_y = [0]
+        self.ac_z = [0]
 
         self.x = np.transpose(np.array([[0, 0]]))
 
@@ -221,13 +221,16 @@ class kalman_filter_velocity():
 
         self.current_position = 0
 
-        self.ac_forward = []
+        self.ac_forward = [0]
+        self.ac_forward_offset = 0
+        self.update_number = 0
 
 
     def update(self, accelerometer, pitch, position, dt):
+        self.update_number += 1
         self.ac_x.append(accelerometer[0])
-        self.ac_y.append(accelerometer[0])
-        self.ac_z.append(accelerometer[0])
+        self.ac_y.append(accelerometer[1])
+        self.ac_z.append(accelerometer[2])
         self.ac_x.pop(0)
         self.ac_y.pop(0)
         self.ac_z.pop(0)
@@ -236,10 +239,20 @@ class kalman_filter_velocity():
         ac_z_mean = np.mean(self.ac_z)
 
         # Using pitch, approximate forward acceleration component
-        ac_forward = np.sqrt((ac_x_mean**2) + (ac_y_mean**2)) * np.cos(np.radians(pitch))
-        #ac_forward = ac_y_mean * np.sin(np.radians(pitch))
+        ac_forward = (ac_x_mean * np.cos(np.radians(pitch)))# + (ac_y_mean * np.sin(np.radians(pitch)))
+        if self.update_number > 201:
+            ac_forward -= self.ac_forward_offset
+            self.ac_forward.append(ac_forward)
+        elif self.update_number > 200:
+            self.ac_forward_offset = np.mean(self.ac_forward[100:200])
+            self.ac_forward = [x - self.ac_forward_offset for x in self.ac_forward]
+            ac_forward -= self.ac_forward_offset
+            self.ac_forward.append(ac_forward)
+        else:
+            self.ac_forward.append(ac_forward)
+            ac_forward = 0
 
-        speed_from_position = (position - self.current_position) / dt
+        speed_from_position = (position - self.current_position) / (2*dt)
         self.current_position = position
 
         # Calculate A and B arrays based on time step
@@ -265,9 +278,6 @@ class kalman_filter_velocity():
 
         self.x = x_new
         self.P = (np.eye(2) - K.dot(self.C)).dot(self.P)
-
-
-        self.ac_forward.append(ac_forward)
 
         return self.x[1][0]
 
