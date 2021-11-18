@@ -36,7 +36,7 @@ class kalman_filter_6dof():
         self.reset()
 
         # Modifiable coefficient arrays
-        self.Q_coeff = 0.000001
+        self.Q_coeff = 0.0000001
         self.Q = np.array([[1, 0, 0, 0],
                            [0, 1, 0, 0],
                            [0, 0, 1, 0],
@@ -44,7 +44,7 @@ class kalman_filter_6dof():
 
         self.R_coeff = 0.001
         self.R = np.array([[1, 0],
-                           [0, 10]]) * self.R_coeff
+                           [0, 1]]) * self.R_coeff
 
         # Variable Initializations
         self.C = np.array([[1, 0, 0, 0],
@@ -64,15 +64,27 @@ class kalman_filter_6dof():
         self.acc_y = [0, 0]
         self.acc_z = [0, 0]
 
+        self.acc_angle_roll = [0]
+        self.acc_angle_pitch = [0]
+        self.roll_dot_arr = [0]
+        self.pitch_dot_arr = [0]
+
+        self.update_number = 0
+
+        self.acc_roll_off = 0
+        self.roll_calib_arr = []
+        self.acc_pitch_off = 0
+        self.pitch_calib_arr = []
+
     def analyze_dataset(self, dataset):
         # Takes in complete set of data (time and 6DoF sensor values) and outputs angles over time.
 
         # Dataset is an array with 7 sub-arrays:
         time_arr = dataset[0]  # Time array for dataset
 
-        gy_x = dataset[1]
-        gy_y = dataset[2]
-        gy_z = dataset[3]
+        gy_x = dataset[1] - np.mean(dataset[1][200:300])
+        gy_y = dataset[2] - np.mean(dataset[2][200:300])
+        gy_z = dataset[3] - np.mean(dataset[3][200:300])
 
         ac_x = dataset[4]
         ac_y = dataset[5]
@@ -99,6 +111,7 @@ class kalman_filter_6dof():
         # Used to update state of object with new values
         # Returns roll and pitch and updates system
         # Unpack inputs
+        self.update_number += 1
         self.acc_x.append(accelerometer[0])
         self.acc_y.append(accelerometer[1])
         self.acc_z.append(accelerometer[2])
@@ -116,14 +129,34 @@ class kalman_filter_6dof():
         pitch_current = self.x[2][0]
 
         # Calculate accelerometer angles
-        accel_roll = np.arctan2(acc_z_mean, np.sqrt((acc_y_mean * acc_y_mean) + (acc_x_mean * acc_x_mean)))
+        accel_roll = -np.arctan2(acc_z_mean, np.sqrt((acc_y_mean * acc_y_mean) + (acc_x_mean * acc_x_mean)))
         accel_pitch = np.arctan2(-acc_x_mean, np.sqrt((acc_z_mean * acc_z_mean) + (acc_y_mean * acc_y_mean)))
+
+        #if self.update_number > 51:
+        #    accel_roll -= self.acc_roll_off
+        #    accel_pitch -= self.acc_pitch_off
+        #elif self.update_number > 50:
+        #    self.acc_roll_off = np.mean(self.roll_calib_arr[5:50])
+        #    self.acc_pitch_off = np.mean(self.pitch_calib_arr[5:50])
+        #    self.acc_angle_roll = [x-self.acc_roll_off for x in self.acc_angle_roll]
+        #    self.acc_angle_pitch = [x-self.acc_pitch_off for x in self.acc_angle_pitch]
+        #    accel_roll -= self.acc_roll_off
+        #    accel_pitch -= self.acc_pitch_off
+        #else:
+        #    self.roll_calib_arr.append(accel_roll)
+        #    self.pitch_calib_arr.append(accel_pitch)
+
+        self.acc_angle_roll.append(np.degrees(accel_roll))
+        self.acc_angle_pitch.append(np.degrees(accel_pitch))
 
         # Get euler angle derivatives of input gyroscope values
         roll_dot = gyro_x \
                    + (np.sin(roll_current) * np.tan(pitch_current) * gyro_z) \
                    + (np.cos(roll_current) * np.tan(pitch_current) * gyro_y)
         pitch_dot = np.cos(roll_current) * gyro_z - np.sin(roll_current) * gyro_y
+
+        self.roll_dot_arr.append(np.degrees(roll_dot))
+        self.pitch_dot_arr.append(np.degrees(pitch_dot))
 
         # Calculate A and B arrays based on time step
         A = np.array([[1, -dt, 0, 0],
@@ -156,8 +189,8 @@ class kalman_filter_6dof():
         return np.degrees(self.x[0][0]), np.degrees(self.x[2][0])
 
     def zero(self, arr):
-        # Zeroes input function based on seconds 2-4 of data
-        calib_val = np.mean(arr[100:200])
+        # Zeroes input function based on seconds 4-6 of data
+        calib_val = np.mean(arr[200:300])
         output = [x - calib_val for x in arr]
         return output
 
@@ -210,9 +243,9 @@ class kalman_filter_velocity():
 
 
     def reset(self):
-        self.ac_x = [0]
-        self.ac_y = [0]
-        self.ac_z = [0]
+        self.ac_x = [0,0]
+        self.ac_y = [0,0]
+        self.ac_z = [0,0]
 
         self.x = np.transpose(np.array([[0, 0]]))
 
@@ -241,7 +274,9 @@ class kalman_filter_velocity():
         ac_z_mean = np.mean(self.ac_z)
 
         # Using pitch, approximate forward acceleration component
-        ac_forward = (ac_x_mean * np.cos(np.radians(pitch)))# + (ac_y_mean * np.sin(np.radians(pitch)))
+        ac_forward = (ac_x_mean * np.cos(np.radians(pitch))) - (ac_y_mean * np.sin(np.radians(pitch)))
+
+
         if self.update_number > 201:
             ac_forward -= self.ac_forward_offset
             self.ac_forward.append(ac_forward)
@@ -254,7 +289,7 @@ class kalman_filter_velocity():
             self.ac_forward.append(ac_forward)
             ac_forward = 0
 
-        speed_from_position = (position - self.current_position) / (2*dt)
+        speed_from_position = (position - self.current_position) / (dt)
         self.current_position = position
 
         # Calculate A and B arrays based on time step
@@ -298,6 +333,7 @@ class kalman_filter_velocity():
         for i in range(1, len(time_arr)):
             dt = time_arr[i] - time_arr[i-1]
             speed_arr.append(self.update([ac_x[i], ac_y[i], ac_z[i]], pitch[i], position[i], dt))
+        speed_arr = self.zero(speed_arr)
         return speed_arr
 
 
@@ -310,6 +346,6 @@ class kalman_filter_velocity():
 
     def zero(self, arr):
         # Zeroes input function based on seconds 2-4 of data
-        calib_val = np.mean(arr[100:200])
+        calib_val = np.mean(arr[200:300])
         output = [x - calib_val for x in arr]
         return output
